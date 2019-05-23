@@ -73,10 +73,10 @@ class AmazonClient:
     page_size = None
     next_page_url = None
 
-    def __init__(self):
-        self.client_id = os.environ['AMZN_AD_CLIENT_ID']
-        self.client_secret = os.environ['AMZN_AD_CLIENT_SECRET']
-        # self.auth_url = "https://www.amazon.com/ap/oa?client_id=" + self.client_id + "&scope=advertising::campaign_management&repsonse_type=code&redirect_url=https%3A//www.accuenplatform.com/accounts/login/%3Fnext%3D/backstage/api/advertiser"
+    def __init__(self, ad_client_id, ad_client_secret):
+
+        self.client_id = ad_client_id
+        self.client_secret = ad_client_secret
         self.auth_url = os.environ['AMZN_AUTH_URL']
         self.profile_id = os.environ['AMZN_DEFAULT_PROFILE_ID']
 
