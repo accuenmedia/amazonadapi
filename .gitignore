@@ -105,3 +105,5 @@ ENV/
 
 # ignore vim .swp files
 *.swp
+
+config.py

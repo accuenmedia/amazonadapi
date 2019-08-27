@@ -1,22 +1,11 @@
 #!/usr/bin/env python
 
-#TODO Upgrade > What is this
-#from future.standard_library import install_aliases
-#install_aliases()
-
 import json
 import requests
 import time
 import os
 import sys
 import re
-
-use_environment_variables = None
-
-try:
-    from django.conf import settings
-except ImportError:
-    use_environment_variables = True
 
 
 class AmazonOrder:
@@ -66,36 +55,31 @@ class AmazonClient:
     refresh_token = None
     profile_id = None
     region = None
-    region_list = {}
     host = None
     data = None
     page_token = None
     page_size = None
     next_page_url = None
 
-    def __init__(self, ad_client_id, ad_client_secret):
+    def __init__(self, ad_client_id, ad_client_secret, profile_id, region, refresh_token):
 
         self.client_id = ad_client_id
         self.client_secret = ad_client_secret
-        self.auth_url = os.environ['AMZN_AUTH_URL']
-        self.profile_id = os.environ['AMZN_DEFAULT_PROFILE_ID']
+        self.auth_url = "https://api.amazon.com/auth/o2/token"
+        self.profile_id = profile_id
+        self.refresh_token = refresh_token
 
-        try:
-            self.refresh_token = os.environ['AMZN_REFRESH_TOKEN']
-        except KeyError as e:
-            print("error missing:")
-            print(e)
-
-        self.region_list = {"UK": "advertising-api-eu.amazon.com", "IN": "advertising-api-eu.amazon.com",
-                            "US": "advertising-api.amazon.com", "JP": "advertising-api-fe.amazon.com"}
-        try:
-            self.host = self.region_list[os.environ['AMZN_REGION']]
-        except KeyError as e:
-            self.host = 'advertising-api.amazon.com'
+        self.host = self.set_region(region)
 
     def connect(self):
         get_token_url = "https://api.amazon.com/auth/o2/token"
-        payload = "grant_type=authorization_code&code=" + self.amzn_code + "&redirect_uri=https%3A//www.accuenplatform.com/accounts/login/%3Fnext%3D/backstage/api/advertiser&client_id=" + self.client_id + "&client_secret=" + self.client_secret
+        payload = {
+            "grant_type": authorization_code,
+            "code": self.amzn_code,
+            "redirect_uri": "https%3A//www.accuenplatform.com/accounts/login/%3Fnext%3D/backstage/api/advertiser&client_id=" + self.client_id,
+            "client_secret": self.client_secret
+        }
+        # "grant_type=authorization_code&code=" + self.amzn_code + "&redirect_uri=https%3A//www.accuenplatform.com/accounts/login/%3Fnext%3D/backstage/api/advertiser&client_id=" + self.client_id + "&client_secret=" + self.client_secret
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         print(get_token_url)
         print(payload)
@@ -130,9 +114,16 @@ class AmazonClient:
         i_counter = 0
         while i_sentinel > 0:
             get_token_url = "https://api.amazon.com/auth/o2/token"
-            payload = "grant_type=refresh_token&client_id=" + self.client_id + "&client_secret=" + self.client_secret + "&refresh_token=" + self.refresh_token
+            payload = {
+                "grant_type": "refresh_token",
+                "refresh_token": self.refresh_token,
+                "client_id": self.client_id,
+                "client_secret": self.client_secret,
+            }
+
+            # "grant_type=refresh_token&client_id=" + self.client_id + "&client_secret=" + self.client_secret + "&refresh_token=" + self.refresh_token
             headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-            r = requests.post(get_token_url, data=payload, headers=headers)
+            r = requests.post(get_token_url, data=payload, headers=headers, verify=False)
             results_json = r.json()
             if 'access_token' in results_json:
                 self.token = results_json['access_token']
@@ -144,12 +135,20 @@ class AmazonClient:
         return results_json
 
     def set_region(self, region='US'):
+        region_list = {
+            "UK": "advertising-api-eu.amazon.com",
+            "IN": "advertising-api-eu.amazon.com",
+            "US": "advertising-api.amazon.com",
+            "JP": "advertising-api-fe.amazon.com"
+        }
         self.region = region
+        
         try:
-            self.host = self.region_list[region]
+            self.host = region_list[region]
         except KeyError as e:
-            self.host = self.region_list["US"]
+            self.host = region_list["US"]
             self.region = "US"
+
         return self.host
 
     # curl -X GET -H "Content-Type:application/json" -H "Authorization: Bearer $AMZN_TOKEN" https://advertising-api.amazon.com/v1/profiles
@@ -330,8 +329,12 @@ class AmazonClient:
     def update_line_item(self, line_item):
         # url = "https://" + self.host + "/da/v1/line-items/" + line_item.id # <-- expected behavior for update
         url = "https://" + self.host + "/da/v1/line-items"
-        headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token, 'Host': self.host,
-                   'Amazon-Advertising-API-Scope': self.profile_id}
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + self.token,
+            'Host': self.host,
+            'Amazon-Advertising-API-Scope': self.profile_id
+        }
 
         self.data = line_item
 
