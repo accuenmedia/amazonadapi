@@ -69,23 +69,6 @@ class AmazonClient:
 
         self.host = self.set_region(region)
 
-    def connect(self):
-        get_token_url = "https://api.amazon.com/auth/o2/token"
-        payload = {
-            "grant_type": authorization_code,
-            "code": self.amzn_code,
-            "redirect_uri": "https%3A//www.accuenplatform.com/accounts/login/%3Fnext%3D/backstage/api/advertiser&client_id=" + self.client_id,
-            "client_secret": self.client_secret
-        }
-        # "grant_type=authorization_code&code=" + self.amzn_code + "&redirect_uri=https%3A//www.accuenplatform.com/accounts/login/%3Fnext%3D/backstage/api/advertiser&client_id=" + self.client_id + "&client_secret=" + self.client_secret
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        print(get_token_url)
-        print(payload)
-        print(headers)
-        r = requests.post(get_token_url, data=payload, headers=headers)
-        results_json = r.json()
-        return results_json
-
     def auto_refresh_token(self):
         i_sentinel = 1
         i_counter = 0
@@ -156,8 +139,12 @@ class AmazonClient:
             else:
                 url = self.host + "/da/v1/advertisers?page_token=" + self.page_token
 
-            headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token, 'Host': self.host,
-                       'Amazon-Advertising-API-Scope': self.profile_id}
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + self.token,
+                'Host': self.host,
+                'Amazon-Advertising-API-Scope': self.profile_id
+            }
 
             r = self.make_request(url, headers, 'GET')
             try:
@@ -398,3 +385,6 @@ class AmazonClient:
             r = requests.put(url, headers=headers, verify=False, data=json.dumps(data))
         results_json = r.json()
         return r, results_json
+
+    def generate_curl_command(self):
+        pass
