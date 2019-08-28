@@ -47,7 +47,6 @@ class AmazonClient:
     aud = None
     payload = None
     encoded_payload = None
-    oauth_url = None
     payload_url = None
     headers = None
     authorized_headers = None
@@ -65,7 +64,6 @@ class AmazonClient:
 
         self.client_id = ad_client_id
         self.client_secret = ad_client_secret
-        self.auth_url = "https://api.amazon.com/auth/o2/token"
         self.profile_id = profile_id
         self.refresh_token = refresh_token
 
@@ -88,27 +86,6 @@ class AmazonClient:
         results_json = r.json()
         return results_json
 
-    def get_amazon_auth_url(self):
-        print("Go to this URL:")
-        print(self.auth_url)
-
-    def cli_auth_dance(self):
-        self.get_amazon_auth_url()
-        if sys.version_info < (3, 0):
-            self.amzn_code = raw_input("Enter Amazon auth code: ")
-        else:
-            self.amzn_code = input("Enter Amazon auth code: ")
-
-        print("Auth code, {}, entered.".format(self.amzn_code))
-        self.raw_token_results = self.connect()
-        print("raw_token_results:")
-        print(self.raw_token_results)
-        self.token = self.raw_token_results['access_token']
-        self.refresh_token = self.raw_token_results['refresh_token']
-        profiles_json = self.get_profiles()
-        self.profile_id = str(profiles_json[0]['profileId'])
-        return self.token
-
     def auto_refresh_token(self):
         i_sentinel = 1
         i_counter = 0
@@ -121,7 +98,6 @@ class AmazonClient:
                 "client_secret": self.client_secret,
             }
 
-            # "grant_type=refresh_token&client_id=" + self.client_id + "&client_secret=" + self.client_secret + "&refresh_token=" + self.refresh_token
             headers = {'Content-Type': 'application/x-www-form-urlencoded'}
             r = requests.post(get_token_url, data=payload, headers=headers, verify=False)
             results_json = r.json()
@@ -136,10 +112,10 @@ class AmazonClient:
 
     def set_region(self, region='US'):
         region_list = {
-            "UK": "advertising-api-eu.amazon.com",
-            "IN": "advertising-api-eu.amazon.com",
-            "US": "advertising-api.amazon.com",
-            "JP": "advertising-api-fe.amazon.com"
+            "UK": "https://advertising-api-eu.amazon.com",
+            "IN": "https://advertising-api-eu.amazon.com",
+            "US": "https://advertising-api.amazon.com",
+            "JP": "https://advertising-api-fe.amazon.com"
         }
         self.region = region
         
@@ -153,7 +129,7 @@ class AmazonClient:
 
     # curl -X GET -H "Content-Type:application/json" -H "Authorization: Bearer $AMZN_TOKEN" https://advertising-api.amazon.com/v1/profiles
     def get_profiles(self):
-        url = "https://" + self.host + "/v1/profiles"
+        url = self.host + "/v1/profiles"
         headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token}
         # r = requests.get(url, headers=headers)
         # results_json = r.json()
@@ -173,12 +149,12 @@ class AmazonClient:
         while i_sentinel == 1:
             if self.page_token == None:
                 if self.page_size == None:
-                    url = "https://" + self.host + "/da/v1/advertisers"
+                    url = self.host + "/da/v1/advertisers"
                 else:
-                    url = "https://" + self.host + "/da/v1/advertisers?page_size=" + str(self.page_size)
+                    url = self.host + "/da/v1/advertisers?page_size=" + str(self.page_size)
                     self.page_size = None
             else:
-                url = "https://" + self.host + "/da/v1/advertisers?page_token=" + self.page_token
+                url = self.host + "/da/v1/advertisers?page_token=" + self.page_token
 
             headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token, 'Host': self.host,
                        'Amazon-Advertising-API-Scope': self.profile_id}
@@ -211,16 +187,19 @@ class AmazonClient:
         while i_sentinel == 1:
             if self.page_token == None:
                 if self.page_size == None:
-                    url = "https://" + self.host + "/da/v1/advertisers/" + str(ad_id) + "/orders"
+                    url = self.host + "/da/v1/advertisers/" + str(ad_id) + "/orders"
                 else:
-                    url = "https://" + self.host + "/da/v1/advertisers/" + str(ad_id) + "/orders?page_size=" + str(
+                    url = self.host + "/da/v1/advertisers/" + str(ad_id) + "/orders?page_size=" + str(
                         self.page_size)
                     self.page_size = None
             else:
-                url = "https://" + self.host + "/da/v1/advertisers/" + str(
-                    ad_id) + "/orders?page_token=" + self.page_token
-            headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token, 'Host': self.host,
-                       'Amazon-Advertising-API-Scope': self.profile_id}
+                url = self.host + "/da/v1/advertisers/" + str(ad_id) + "/orders?page_token=" + self.page_token
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + self.token,
+                'Host': self.host,
+                'Amazon-Advertising-API-Scope': self.profile_id
+            }
             r = self.make_request(url, headers, 'GET')
             try:
                 self.next_page_url = r.headers['Link']
@@ -243,9 +222,13 @@ class AmazonClient:
     # url: https://advertising-api.amazon.com/da/v1/orders/ORDER_ID
     def get_order(self, order_id):
 
-        url = "https://" + self.host + "/da/v1/orders/" + order_id
-        headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token, 'Host': self.host,
-                   'Amazon-Advertising-API-Scope': self.profile_id}
+        url = self.host + "/da/v1/orders/" + order_id
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + self.token,
+            'Host': self.host,
+            'Amazon-Advertising-API-Scope': self.profile_id
+        }
 
         r = self.make_request(url, headers, 'GET')
         return r
@@ -262,16 +245,21 @@ class AmazonClient:
         while i_sentinel == 1:
             if self.page_token == None:
                 if self.page_size == None:
-                    url = "https://" + self.host + "/da/v1/orders/" + order_id + "/line-items"
+                    url = self.host + "/da/v1/orders/" + order_id + "/line-items"
                 else:
-                    url = "https://" + self.host + "/da/v1/orders/" + order_id + "/line-items?page_size=" + str(
+                    url = self.host + "/da/v1/orders/" + order_id + "/line-items?page_size=" + str(
                         self.page_size)
                     self.page_size = None
             else:
-                url = "https://" + self.host + "/da/v1/orders/" + order_id + "/line-items?page_token=" + self.page_token
+                url = self.host + "/da/v1/orders/" + order_id + "/line-items?page_token=" + self.page_token
 
-            headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token, 'Host': self.host,
-                       'Amazon-Advertising-API-Scope': self.profile_id}
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + self.token,
+                'Host': self.host,
+                'Amazon-Advertising-API-Scope': self.profile_id
+            }
+
             r = self.make_request(url, headers, 'GET')
 
             try:
@@ -289,17 +277,25 @@ class AmazonClient:
         return r
 
     def get_line_item(self, line_item_id):
-        url = "https://" + self.host + "/da/v1/line-items/" + line_item_id
-        headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token, 'Host': self.host,
-                   'Amazon-Advertising-API-Scope': self.profile_id}
+        url = self.host + "/da/v1/line-items/" + line_item_id
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + self.token,
+            'Host': self.host,
+            'Amazon-Advertising-API-Scope': self.profile_id
+        }
 
         r = self.make_request(url, headers, 'GET')
         return r
 
     def create_order(self, order):
-        url = "https://" + self.host + "/da/v1/orders"
-        headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token, 'Host': self.host,
-                   'Amazon-Advertising-API-Scope': self.profile_id}
+        url = self.host + "/da/v1/orders"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + self.token,
+            'Host': self.host,
+            'Amazon-Advertising-API-Scope': self.profile_id
+        }
 
         self.data = order
 
@@ -307,9 +303,13 @@ class AmazonClient:
         return r
 
     def update_order(self, order):
-        url = "https://" + self.host + "/da/v1/orders"
-        headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token, 'Host': self.host,
-                   'Amazon-Advertising-API-Scope': self.profile_id}
+        url = self.host + "/da/v1/orders"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + self.token,
+            'Host': self.host,
+            'Amazon-Advertising-API-Scope': self.profile_id
+        }
 
         self.data = order
 
@@ -317,9 +317,13 @@ class AmazonClient:
         return r
 
     def create_line_item(self, line_item):
-        url = "https://" + self.host + "/da/v1/line-items"
-        headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token, 'Host': self.host,
-                   'Amazon-Advertising-API-Scope': self.profile_id}
+        url = self.host + "/da/v1/line-items"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + self.token,
+            'Host': self.host,
+            'Amazon-Advertising-API-Scope': self.profile_id
+        }
 
         self.data = line_item
 
@@ -327,8 +331,8 @@ class AmazonClient:
         return r
 
     def update_line_item(self, line_item):
-        # url = "https://" + self.host + "/da/v1/line-items/" + line_item.id # <-- expected behavior for update
-        url = "https://" + self.host + "/da/v1/line-items"
+        # url = self.host + "/da/v1/line-items/" + line_item.id # <-- expected behavior for update
+        url = self.host + "/da/v1/line-items"
         headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + self.token,
