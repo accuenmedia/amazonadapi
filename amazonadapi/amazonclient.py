@@ -113,9 +113,10 @@ class AmazonClient:
     # curl -X GET -H "Content-Type:application/json" -H "Authorization: Bearer $AMZN_TOKEN" https://advertising-api.amazon.com/v1/profiles
     def get_profiles(self):
         url = self.host + "/v1/profiles"
-        headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token}
-        # r = requests.get(url, headers=headers)
-        # results_json = r.json()
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + self.token
+        }
 
         r = self.make_request(url, headers, 'GET')
         return r
@@ -378,7 +379,7 @@ class AmazonClient:
         # modify headers with new access token
         headers['Authorization'] = 'Bearer ' + token
         if method_type == 'GET':
-            r = requests.get(url, headers=headers)
+            r = requests.get(url, headers=headers, verify=False)
         if method_type == 'POST':
             r = requests.post(url, headers=headers, verify=False, data=json.dumps(data))
         if method_type == 'PUT':
