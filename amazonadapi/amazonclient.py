@@ -49,7 +49,6 @@ class AmazonClient:
     encoded_payload = None
     payload_url = None
     headers = None
-    authorized_headers = None
     token = None
     refresh_token = None
     profile_id = None
@@ -106,7 +105,6 @@ class AmazonClient:
     # url: https://advertising-api.amazon.com/da/v1/advertisers
     def get_advertisers(self):
         i_sentinel = 1
-        ids = []
         response_json = {}
         while i_sentinel == 1:
             if self.page_token == None:
@@ -194,8 +192,6 @@ class AmazonClient:
     # url: https://advertising-api.amazon.com/da/v1/orders/ORDER_ID/line-items
     def get_line_items(self, order_id):
         i_sentinel = 1
-        ids = []
-        response_json = {}
         while i_sentinel == 1:
             if self.page_token == None:
                 if self.page_size == None:
@@ -225,13 +221,12 @@ class AmazonClient:
 
     def get_line_item(self, line_item_id):
         url = "https://" + self.host + "/da/v1/line-items/" + line_item_id
-
         r = self.make_request(url, self.object_headers, 'GET')
+
         return r
 
     def create_order(self, order):
         url = "https://" + self.host + "/da/v1/orders"
-
         self.data = order
 
         r = self.make_request(url, self.object_headers, 'POST', self.data)
@@ -239,7 +234,6 @@ class AmazonClient:
 
     def update_order(self, order):
         url = "https://" + self.host + "/da/v1/orders"
-
         self.data = order
 
         r = self.make_request(url, self.object_headers, 'PUT', self.data)
@@ -247,39 +241,25 @@ class AmazonClient:
 
     def create_line_item(self, line_item):
         url = "https://" + self.host + "/da/v1/line-items"
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + self.token,
-            'Host': self.host,
-            'Amazon-Advertising-API-Scope': self.profile_id
-        }
-
         self.data = line_item
 
-        r = self.make_request(url, headers, 'POST', self.data)
+        r = self.make_request(url, self.object_headers, 'POST', self.data)
         return r
 
     def update_line_item(self, line_item):
         # url = self.host + "/da/v1/line-items/" + line_item.id # <-- expected behavior for update
         url = "https://" + self.host + "/da/v1/line-items"
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + self.token,
-            'Host': self.host,
-            'Amazon-Advertising-API-Scope': self.profile_id
-        }
-
         self.data = line_item
 
-        r = self.make_request(url, headers, 'PUT', self.data)
+        r = self.make_request(url, self.object_headers, 'PUT', self.data)
         return r
 
     # create response_json method to abstract away the creation of return response that matt wants
-    def generate_json_response(self, r, results_json, request_body):
+    def generate_json_response(self, r, results_json, data):
 
         response_json = {
             'response_code': r.status_code,
-            'request_body': request_body
+            'request_body': self.generate_curl_command(r.request.method, r.url, self.object_headers, data)
         }
         # if request is successful, ensure msg_type is success
         if r.status_code in [200, 201]:
@@ -296,7 +276,6 @@ class AmazonClient:
 
     # make_request(method_type) --> pass in method_type
     def make_request(self, url, headers, method_type, data=None):
-        request_body = url, headers, data
         r, results_json = self.make_new_request(url, self.token, method_type, headers, data)
 
         if r.status_code in [400, 401]:
@@ -306,7 +285,7 @@ class AmazonClient:
             r, results_json = self.make_new_request(url, self.connection.token, method_type, headers)
 
         # use results_json to create updated json dict
-        response_json = self.generate_json_response(r, results_json, request_body)
+        response_json = self.generate_json_response(r, results_json, data)
 
         return json.dumps(response_json)
 
@@ -323,5 +302,10 @@ class AmazonClient:
         results_json = r.json()
         return r, results_json
 
-    def generate_curl_command(self):
-        pass
+    def generate_curl_command(self, method, url, headers, data=None):
+        command = 'curl -v -H {headers} {data} -X {method} "{uri}"'
+        
+        header_list = ['"{0}: {1}"'.format(k, v) for k, v in headers.items()]
+        header = " -H ".join(header_list)
+
+        return command.format(method=method, headers=header, data=data, uri=url)
