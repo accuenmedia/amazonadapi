@@ -3,11 +3,11 @@ import json
 
 import config
 
-from amazonadapi.order import Order
+from amazonadapi.lineitem import LineItem
 from amazonadapi.connection import Connection
 
-class OrderTestCase(unittest.TestCase):
-    def test_get_all_orders(self):
+class LineItemTestCase(unittest.TestCase):
+    def test_get_lineitems_by_order(self):
         connection = Connection(config.ad_client_id, config.ad_client_secret, config.region, config.refresh_token)
 
         orders = Order(connection, config.region, config.profile_id)
