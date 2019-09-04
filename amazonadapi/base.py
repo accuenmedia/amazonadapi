@@ -2,24 +2,7 @@
 
 import json
 import requests
-import time
-import os
-import sys
 import re
-
-
-class AmazonOrder:
-    id = None
-    advertiserId = None
-    name = None
-    startDateTime = None
-    endDateTime = None
-    status = None
-    budget = {}
-    deliveryCaps = []
-
-    def __init__(self):
-        self.status = 'INACTIVE'
 
 
 class AmazonLineItem:
@@ -28,8 +11,6 @@ class AmazonLineItem:
     advertiserId = None
     name = None
     type = None
-    startDateTime = None
-    endDateTime = None
     status = None
     budget = {}
     deliveryCaps = []
@@ -38,7 +19,7 @@ class AmazonLineItem:
         self.status = 'INACTIVE'
 
 
-class AmazonClient:
+class Base:
     client_id = None
     client_secret = None
     api_key = None
