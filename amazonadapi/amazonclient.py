@@ -87,7 +87,6 @@ class AmazonClient:
 
         return self.host
 
-    # curl -X GET -H "Content-Type:application/json" -H "Authorization: Bearer $AMZN_TOKEN" https://advertising-api.amazon.com/v1/profiles
     def get_profiles(self):
         url = "https://" + self.host + "/v1/profiles"
         headers = {
@@ -98,14 +97,8 @@ class AmazonClient:
         r = self.make_request(url, headers, 'GET')
         return r
 
-    # -H Authorization: Bearer self.token
-    # -H Host: advertising-api.amazon
-    # -H Amazon-Advertising-API-Scope: PROFILE_ID
-    # -H Content-Type: application/json
-    # url: https://advertising-api.amazon.com/da/v1/advertisers
     def get_advertisers(self):
         i_sentinel = 1
-        response_json = {}
         while i_sentinel == 1:
             if self.page_token == None:
                 if self.page_size == None:
@@ -139,12 +132,6 @@ class AmazonClient:
         self.page_size = None
         return r
 
-    # -H Authorization: Bearer self.token
-    # -H Host: advertising-api.amazon
-    # -H Amazon-Advertising-API-Scope: PROFILE_ID
-    # -H Content-Type: application/json
-    # url: https://advertising-api.amazon.com/da/v1/advertisers/AD_ID/orders
-
     def get_orders(self, ad_id):
         i_sentinel = 1
 
@@ -174,22 +161,12 @@ class AmazonClient:
         self.page_size = None
         return r
 
-    # -H Authorization: Bearer self.token
-    # -H Host: advertising-api.amazon
-    # -H Amazon-Advertising-API-Scope: PROFILE_ID
-    # -H Content-Type: application/json
-    # url: https://advertising-api.amazon.com/da/v1/orders/ORDER_ID
     def get_order(self, order_id):
         url = "https://" + self.host + "/da/v1/orders/" + order_id
         r = self.make_request(url, self.object_headers, 'GET')
 
         return r
 
-    # -H Authorization: Bearer self.token
-    # -H Host: advertising-api.amazon
-    # -H Amazon-Advertising-API-Scope: PROFILE_ID
-    # -H Content-Type: application/json
-    # url: https://advertising-api.amazon.com/da/v1/orders/ORDER_ID/line-items
     def get_line_items(self, order_id):
         i_sentinel = 1
         while i_sentinel == 1:
@@ -254,27 +231,23 @@ class AmazonClient:
         r = self.make_request(url, self.object_headers, 'PUT', self.data)
         return r
 
-    # create response_json method to abstract away the creation of return response that matt wants
     def generate_json_response(self, r, results_json, data):
 
         response_json = {
             'response_code': r.status_code,
             'request_body': self.generate_curl_command(r.request.method, r.url, self.object_headers, data)
         }
-        # if request is successful, ensure msg_type is success
         if r.status_code in [200, 201]:
             response_json['msg_type'] = 'success'
             response_json['msg'] = ''
             response_json['data'] = results_json
         else:
             response_json['msg_type'] = 'error'
-            # display the error message that comes back from request
             response_json['msg'] = results_json['error']
             response_json['data'] = results_json['error']
 
         return response_json
 
-    # make_request(method_type) --> pass in method_type
     def make_request(self, url, headers, method_type, data=None):
         r, results_json = self.make_new_request(url, self.token, method_type, headers, data)
 
