@@ -6,18 +6,7 @@ import re
 
 
 class Base:
-    client_id = None
-    client_secret = None
-    api_key = None
-    id_host = None
-    one_host = None
-    aud = None
-    payload = None
-    encoded_payload = None
-    payload_url = None
-    headers = None
     token = None
-    refresh_token = None
     profile_id = None
     region = None
     host = None

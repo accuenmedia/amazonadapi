@@ -1,8 +1,9 @@
 import requests
 import re
 
+from .base import Base
 
-class LineItem:
+class LineItem(Base):
     id = None
     orderId = None
     advertiserId = None

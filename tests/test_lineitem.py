@@ -10,10 +10,10 @@ class LineItemTestCase(unittest.TestCase):
     def test_get_lineitems_by_order(self):
         connection = Connection(config.ad_client_id, config.ad_client_secret, config.region, config.refresh_token)
 
-        orders = Order(connection, config.region, config.profile_id)
+        lines = LineItem(connection, config.region, config.profile_id)
         
-        id = "5801781520901"
+        id = "9327887810601"
 
-        orders = json.loads(orders.get_orders("5801781520901"))
-        print(orders)
-        self.assertEqual(orders["response_code"], 200)
+        line_items = json.loads(lines.get_line_items(id))
+        print(line_items)
+        self.assertEqual(line_items["response_code"], 200)
